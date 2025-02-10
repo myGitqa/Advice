@@ -1,0 +1,156 @@
+To resolve this issue via the command line, you can follow the steps below, focusing on adjusting DNS settings for Pi-hole, Tailscale, and Unbound.
+
+1. Ensure Tailscale DNS Points to Pi-hole
+
+First, verify that Tailscale’s DNS setting points to Pi-hole's IP address.
+
+Open a terminal on your device running Tailscale.
+
+Check the current DNS settings with this command:
+
+tailscale status
+
+Look for the line DNS to check if it’s pointing to Pi-hole’s IP address (e.g., 192.168.x.x). If it's not pointing to Pi-hole, change the DNS settings.
+
+To set Tailscale to use Pi-hole as the DNS server, run:
+
+sudo tailscale up --dns 192.168.x.x
+
+Replace 192.168.x.x with Pi-hole’s local IP address.
+
+
+2. Check Pi-hole’s DNS Configuration
+
+Make sure Pi-hole is configured to use Unbound as its upstream DNS resolver.
+
+SSH into the Pi-hole device:
+
+ssh pi@your-pihole-ip
+
+Edit Pi-hole's DNS settings by opening the configuration file:
+
+sudo nano /etc/pihole/setupVars.conf
+
+Ensure PIHOLE_DNS_1 and PIHOLE_DNS_2 point to Unbound. For example:
+
+PIHOLE_DNS_1=127.0.0.1#5335
+PIHOLE_DNS_2=127.0.0.1#5335
+
+Save and exit (CTRL+X, then Y to confirm).
+
+
+Restart Pi-hole to apply the changes:
+
+pihole restartdns
+
+
+3. Verify Unbound Configuration
+
+Ensure that Unbound is running and correctly configured to be the DNS resolver for Pi-hole.
+
+Check if Unbound is running:
+
+sudo systemctl status unbound
+
+If it’s not active, start it with:
+
+sudo systemctl start unbound
+
+If needed, restart Unbound:
+
+sudo systemctl restart unbound
+
+
+4. Check Firewall Settings
+
+Verify that your firewall is not blocking DNS traffic on your Pi-hole device or Tailscale exit node.
+
+To check the firewall on your Pi-hole device, run:
+
+sudo ufw status
+
+Ensure that port 53 (DNS) is allowed.
+
+If DNS is blocked, allow it:
+
+sudo ufw allow 53
+
+You can also check Tailscale’s firewall settings (if using iptables) by verifying that port 53 is not blocked:
+
+sudo iptables -L
+
+
+5. Restart Tailscale and Pi-hole
+
+After making these changes, restart both Tailscale and Pi-hole services to ensure the settings take effect:
+
+Restart Tailscale:
+
+sudo systemctl restart tailscale
+
+Restart Pi-hole:
+
+pihole restartdns
+
+
+6. Verify DNS Resolution
+
+Finally, check if DNS resolution is working correctly through Pi-hole and Tailscale:
+
+From a Tailscale-connected device, try resolving a domain:
+
+dig @your-pihole-ip example.com
+
+Replace your-pihole-ip with the Pi-hole device’s IP.
+
+Check Pi-hole’s query log to see if it’s receiving DNS requests:
+
+pihole -t
+
+
+Additional Troubleshooting
+
+If the exit node still isn’t working, verify if there are any other Tailscale-specific DNS configurations that could be conflicting. Sometimes, clearing the DNS cache on your Tailscale device can help:
+
+sudo systemctl restart tailscale
+
+Summary of Commands
+
+1. Set Tailscale DNS:
+
+sudo tailscale up --dns 192.168.x.x
+
+
+2. Edit Pi-hole DNS settings:
+
+sudo nano /etc/pihole/setupVars.conf
+sudo pihole restartdns
+
+
+3. Verify Unbound is running:
+
+sudo systemctl status unbound
+sudo systemctl restart unbound
+
+
+4. Check Pi-hole firewall:
+
+sudo ufw status
+sudo ufw allow 53
+
+
+5. Restart services:
+
+sudo systemctl restart tailscale
+sudo pihole restartdns
+
+
+6. Test DNS:
+
+dig @your-pihole-ip example.com
+pihole -t
+
+
+
+Let me know if you run into any issues or need further assistance!
+
