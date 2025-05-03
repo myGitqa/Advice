@@ -1,0 +1,22 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Termux Basic Setup Script
+
+# Grant storage permission
+termux-setup-storage
+
+# Wait a few seconds for the permission to be granted
+sleep 2
+
+# Update and upgrade packages
+pkg update -y && pkg upgrade -y
+
+# Enable extra repositories
+pkg install x11-repo root-repo science-repo -y
+
+# Install common useful packages
+pkg install git curl wget nano vim python zip unzip tar -y
+
+# Clean up
+pkg autoclean
+
+echo "Termux setup complete!"
