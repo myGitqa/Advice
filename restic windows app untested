@@ -1,0 +1,86 @@
+
+@echo off
+setlocal EnableDelayedExpansion
+
+:: Configuration
+set REPO=sftp:username@192.168.1.100:/backups/restic
+set RESTIC_PASSWORD=your_repository_password
+set LOG_FILE=C:\restic\backup_log.txt
+set RESTIC=C:\restic\restic.exe
+set USER_HOME=%USERPROFILE%
+
+:: App-specific folders
+set OBS_FOLDER=%USER_HOME%\AppData\Roaming\obs-studio
+set CHROME_FOLDER=%USER_HOME%\AppData\Local\Google\Chrome\User Data
+set FIREFOX_FOLDER=%USER_HOME%\AppData\Roaming\Mozilla\Firefox
+set OPENLP_ROAMING=%USER_HOME%\AppData\Roaming\OpenLP
+set OPENLP_LOCAL=%USER_HOME%\AppData\Local\openlp
+
+:: Set Restic password
+set RESTIC_PASSWORD=%RESTIC_PASSWORD%
+
+:: Log start time
+echo [%DATE% %TIME%] Starting backup to NAS... >> %LOG_FILE%
+
+:: Check if Restic is installed
+if not exist "%RESTIC%" (
+    echo [%DATE% %TIME%] ERROR: Restic not found at %RESTIC% >> %LOG_FILE%
+    exit /b 1
+)
+
+:: Check if repository exists (initialize if not)
+%RESTIC% snapshots --repo %REPO% >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [%DATE% %TIME%] Initializing repository at %REPO%... >> %LOG_FILE%
+    %RESTIC% init --repo %REPO% >> %LOG_FILE% 2>&1
+    if %ERRORLEVEL% neq 0 (
+        echo [%DATE% %TIME%] ERROR: Repository initialization failed >> %LOG_FILE%
+        exit /b 1
+    )
+)
+
+:: Backup each app folder with exclusions
+echo [%DATE% %TIME%] Backing up OBS Studio... >> %LOG_FILE%
+%RESTIC% -r %REPO% backup "%OBS_FOLDER%" --exclude "*.log" --quiet >> %LOG_FILE% 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [%DATE% %TIME%] ERROR: OBS Studio backup failed >> %LOG_FILE%
+) else (
+    echo [%DATE% %TIME%] OBS Studio backed up successfully >> %LOG_FILE%
+)
+
+echo [%DATE% %TIME%] Backing up Google Chrome... >> %LOG_FILE%
+%RESTIC% -r %REPO% backup "%CHROME_FOLDER%" --exclude "Cache" --exclude "Code Cache" --quiet >> %LOG_FILE% 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [%DATE% %TIME%] ERROR: Chrome backup failed >> %LOG_FILE%
+) else (
+    echo [%DATE% %TIME%] Chrome backed up successfully >> %LOG_FILE%
+)
+
+echo [%DATE% %TIME%] Backing up Firefox... >> %LOG_FILE%
+%RESTIC% -r %REPO% backup "%FIREFOX_FOLDER%" --exclude "cache*" --quiet >> %LOG_FILE% 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [%DATE% %TIME%] ERROR: Firefox backup failed >> %LOG_FILE%
+) else (
+    echo [%DATE% %TIME%] Firefox backed up successfully >> %LOG_FILE%
+)
+
+echo [%DATE% %TIME%] Backing up OpenLP... >> %LOG_FILE%
+%RESTIC% -r %REPO% backup "%OPENLP_ROAMING%" "%OPENLP_LOCAL%" --exclude "*.log" --quiet >> %LOG_FILE% 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [%DATE% %TIME%] ERROR: OpenLP backup failed >> %LOG_FILE%
+) else (
+    echo [%DATE% %TIME%] OpenLP backed up successfully >> %LOG_FILE%
+)
+
+:: Clean up old snapshots (keep last 10)
+echo [%DATE% %TIME%] Cleaning up old snapshots... >> %LOG_FILE%
+%RESTIC% -r %REPO% forget --keep-last 10 --prune --quiet >> %LOG_FILE% 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [%DATE% %TIME%] ERROR: Snapshot cleanup failed >> %LOG_FILE%
+) else (
+    echo [%DATE% %TIME%] Snapshot cleanup completed >> %LOG_FILE%
+)
+
+:: Log completion
+echo [%DATE% %TIME%] Backup completed >> %LOG_FILE%
+exit /b 0
