@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# === CONFIG ===
+SRC="/path/to/source/file_or_folder"   # file or folder to compress
+OUTDIR="/path/to/output"               # destination folder for archive
+# ==============
+
+# Get just the name of the file/folder (without path)
+ARCHIVE="$(basename "$SRC")"
+
+# Create output directory if it doesn't exist
+mkdir -p "$OUTDIR"
+
+# 7z options:
+# -mx=0   → store mode (no compression, minimal CPU)
+# -ms=off → disable solid mode
+# -v2000m → split into 1999MB volumes
+
+7z a -t7z -mx=0 -ms=off -v1999m "$OUTDIR/$ARCHIVE.7z" "$SRC"
