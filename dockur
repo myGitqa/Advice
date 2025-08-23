@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  win11-iot:
+    image: dockurr/windows
+    container_name: win11-iot
+    environment:
+      ISO_URL: "/iso/Win11_IoT_LTSC.iso"
+      EDITION: "IoT Enterprise LTSC"
+      RAM_SIZE: "4096"
+      CPU_CORES: "4"
+      DISK_SIZE: "64G"
+      UNATTENDED: "true"          # automatic install
+      USERNAME: "iotuser"         # default user
+      PASSWORD: "P@ssw0rd!"       # default password
+      LOCALE: "en-US"             # language/keyboard
+      TIMEZONE: "Asia/Singapore"  # <-- your timezone
+    devices:
+      - /dev/kvm
+    ports:
+      - 8006:8006   # noVNC
+      - 3389:3389   # RDP
+    volumes:
+      - /media/hdd1/software:/iso
+      - ./win11iot:/data
+    restart: unless-stopped
